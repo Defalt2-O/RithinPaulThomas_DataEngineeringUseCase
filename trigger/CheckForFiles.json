@@ -1,0 +1,25 @@
+{
+	"name": "CheckForFiles",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "ingestion_pipeline",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Minute",
+				"interval": 5,
+				"startTime": "2026-03-11T14:09:00",
+				"endTime": "2026-03-13T15:13:00",
+				"timeZone": "India Standard Time"
+			}
+		}
+	}
+}

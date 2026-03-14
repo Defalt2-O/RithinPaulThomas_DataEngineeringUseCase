@@ -1,0 +1,21 @@
+{
+	"name": "ds_osparquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "linkedservice_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "server_distribution_by_os",
+				"fileSystem": "curated"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

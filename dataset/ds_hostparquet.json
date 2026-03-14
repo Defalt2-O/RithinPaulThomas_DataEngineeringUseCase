@@ -1,0 +1,21 @@
+{
+	"name": "ds_hostparquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "linkedservice_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "server_distribution_by_host",
+				"fileSystem": "curated"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

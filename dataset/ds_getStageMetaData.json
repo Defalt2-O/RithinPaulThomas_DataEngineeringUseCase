@@ -1,0 +1,88 @@
+{
+	"name": "ds_getStageMetaData",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "linkedservice_adls",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "staging"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Server_ID",
+				"type": "String"
+			},
+			{
+				"name": "Hostname",
+				"type": "String"
+			},
+			{
+				"name": "IP_Address",
+				"type": "String"
+			},
+			{
+				"name": "OS_Type",
+				"type": "String"
+			},
+			{
+				"name": "Server_Location",
+				"type": "String"
+			},
+			{
+				"name": "CPU_Utilization (%)",
+				"type": "String"
+			},
+			{
+				"name": "Memory_Usage (%)",
+				"type": "String"
+			},
+			{
+				"name": "Disk_IO (%)",
+				"type": "String"
+			},
+			{
+				"name": "Network_Traffic_In (MB/s)",
+				"type": "String"
+			},
+			{
+				"name": "Network_Traffic_Out (MB/s)",
+				"type": "String"
+			},
+			{
+				"name": "Uptime (Hours)",
+				"type": "String"
+			},
+			{
+				"name": "Downtime (Hours)",
+				"type": "String"
+			},
+			{
+				"name": "Admin_Name",
+				"type": "String"
+			},
+			{
+				"name": "Admin_Email",
+				"type": "String"
+			},
+			{
+				"name": "Admin_Phone",
+				"type": "String"
+			},
+			{
+				"name": "Log_Timestamp",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

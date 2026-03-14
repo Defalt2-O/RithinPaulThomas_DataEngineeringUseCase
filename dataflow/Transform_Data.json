@@ -1,0 +1,104 @@
+{
+	"name": "Transform_Data",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_rawsink",
+						"type": "DatasetReference"
+					},
+					"name": "VirtualServerLogs"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_processedsinkparquet",
+						"type": "DatasetReference"
+					},
+					"name": "TransformedVirtualServerLogs"
+				}
+			],
+			"transformations": [
+				{
+					"name": "timeStampConversion"
+				},
+				{
+					"name": "filterIncorrectValues"
+				},
+				{
+					"name": "RemovePIIData"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Server_ID as string,",
+				"          Hostname as string,",
+				"          IP_Address as string,",
+				"          OS_Type as string,",
+				"          Server_Location as string,",
+				"          {CPU_Utilization (%)} as double,",
+				"          {Memory_Usage (%)} as double,",
+				"          {Disk_IO (%)} as double,",
+				"          {Network_Traffic_In (MB/s)} as double,",
+				"          {Network_Traffic_Out (MB/s)} as double,",
+				"          {Uptime (Hours)} as double,",
+				"          {Downtime (Hours)} as double,",
+				"          Admin_Name as string,",
+				"          Admin_Email as string,",
+				"          Admin_Phone as string,",
+				"          Log_Timestamp as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> VirtualServerLogs",
+				"filterIncorrectValues derive({Total_Network_Traffic (MB/s)} = round({Network_Traffic_Out (MB/s)} + {Network_Traffic_In (MB/s)}, 2),",
+				"          {Uptime_Utilization (%)} = round({Uptime (Hours)}/({Uptime (Hours)}+{Downtime (Hours)}) * 100, 2),",
+				"          Server_Load = iif({CPU_Utilization (%)} > 75, 'High', iif({CPU_Utilization (%)} > 50, 'Moderate', 'Low')),",
+				"          Log_Timestamp = toTimestamp(Log_Timestamp, 'dd-MM-yyyy'),",
+				"          IP_Address_Hash = sha2(256, toString(IP_Address)),",
+				"          Hostname_Hash = sha2(256, toString(Hostname)),",
+				"          Admin_Email_Hash = sha2(256, toString(Admin_Email)),",
+				"          Admin_Phone_Hash = sha2(256, toString(Admin_Phone))) ~> timeStampConversion",
+				"VirtualServerLogs filter({CPU_Utilization (%)} >= 0 && {CPU_Utilization (%)} <= 100 &&\r",
+				"{Memory_Usage (%)} >= 0 && {Memory_Usage (%)} <= 100 &&\r",
+				"{Disk_IO (%)} >= 0 && \r",
+				"{Network_Traffic_In (MB/s)} >= 0 && {Network_Traffic_Out (MB/s)} >= 0) ~> filterIncorrectValues",
+				"timeStampConversion select(mapColumn(",
+				"          Server_ID,",
+				"          Hostname_Hash,",
+				"          IP_Address_Hash,",
+				"          OS_Type,",
+				"          Server_Location,",
+				"          CPU_Utilization = {CPU_Utilization (%)},",
+				"          Memory_Usage = {Memory_Usage (%)},",
+				"          Disk_IO = {Disk_IO (%)},",
+				"          Network_Traffic_In = {Network_Traffic_In (MB/s)},",
+				"          Network_Traffic_Out = {Network_Traffic_Out (MB/s)},",
+				"          Total_Network_Traffic = {Total_Network_Traffic (MB/s)},",
+				"          Uptime_Hours = {Uptime (Hours)},",
+				"          Downtime_Hours = {Downtime (Hours)},",
+				"          Uptime_Utilization = {Uptime_Utilization (%)},",
+				"          Admin_Name,",
+				"          Admin_Email_Hash,",
+				"          Admin_Phone_Hash,",
+				"          Log_Timestamp,",
+				"          Server_Load",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RemovePIIData",
+				"RemovePIIData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> TransformedVirtualServerLogs"
+			]
+		}
+	}
+}

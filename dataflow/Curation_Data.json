@@ -1,0 +1,180 @@
+{
+	"name": "Curation_Data",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_processedsinkparquet",
+						"type": "DatasetReference"
+					},
+					"name": "TransformedSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_loadparquet",
+						"type": "DatasetReference"
+					},
+					"name": "LoadSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_osparquet",
+						"type": "DatasetReference"
+					},
+					"name": "OSSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_timeparquet",
+						"type": "DatasetReference"
+					},
+					"name": "TimeSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_hostparquet",
+						"type": "DatasetReference"
+					},
+					"name": "HostSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_locationparquet",
+						"type": "DatasetReference"
+					},
+					"name": "LocationSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AggregationByHost"
+				},
+				{
+					"name": "AggregationByLocation"
+				},
+				{
+					"name": "AggregationByOS"
+				},
+				{
+					"name": "AggregationByLoad"
+				},
+				{
+					"name": "HashTruncate"
+				},
+				{
+					"name": "TimeFormat"
+				},
+				{
+					"name": "AggregateByLogTimeStamp"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Server_ID as string,",
+				"          Hostname_Hash as string,",
+				"          IP_Address_Hash as string,",
+				"          OS_Type as string,",
+				"          Server_Location as string,",
+				"          CPU_Utilization as double,",
+				"          Memory_Usage as double,",
+				"          Disk_IO as double,",
+				"          Network_Traffic_In as double,",
+				"          Network_Traffic_Out as double,",
+				"          Total_Network_Traffic as double,",
+				"          Uptime_Hours as double,",
+				"          Downtime_Hours as double,",
+				"          Uptime_Utilization as double,",
+				"          Admin_Name as string,",
+				"          Admin_Email_Hash as string,",
+				"          Admin_Phone_Hash as string,",
+				"          Log_Timestamp as timestamp,",
+				"          Server_Load as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> TransformedSource",
+				"HashTruncate aggregate(groupBy(Host_ID,",
+				"          Hostname_Hash),",
+				"     Server_Count = count(Server_ID),",
+				"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+				"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+				"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+				"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+				"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByHost",
+				"TransformedSource aggregate(groupBy(Server_Location),",
+				"     Server_Count = count(Server_ID),",
+				"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+				"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+				"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+				"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+				"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByLocation",
+				"TransformedSource aggregate(groupBy(OS_Type),",
+				"     Server_Count = count(Server_ID),",
+				"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+				"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+				"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+				"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+				"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByOS",
+				"TransformedSource aggregate(groupBy(Server_Load),",
+				"     Server_Count = count(Server_ID),",
+				"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2)) ~> AggregationByLoad",
+				"TransformedSource derive(Host_ID = substring(Hostname_Hash, 1, 8)) ~> HashTruncate",
+				"TransformedSource derive(Log_Timestamp = toDate(Log_Timestamp)) ~> TimeFormat",
+				"TimeFormat aggregate(groupBy(Log_Timestamp),",
+				"     Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+				"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+				"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2)) ~> AggregateByLogTimeStamp",
+				"AggregationByLoad sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> LoadSink",
+				"AggregationByOS sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> OSSink",
+				"AggregateByLogTimeStamp sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> TimeSink",
+				"AggregationByHost sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> HostSink",
+				"AggregationByLocation sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     truncate: true,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> LocationSink"
+			]
+		}
+	}
+}

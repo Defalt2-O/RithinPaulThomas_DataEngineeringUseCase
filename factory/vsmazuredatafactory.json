@@ -1,0 +1,9 @@
+{
+	"name": "vsmazuredatafactory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "8a88e961-2cce-431f-a89f-dcfa22ddcb27",
+		"tenantId": "50abe8d0-e723-48f6-90c5-681988cfc640"
+	}
+}
