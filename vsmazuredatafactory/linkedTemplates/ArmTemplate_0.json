@@ -1,0 +1,1383 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "vsmazuredatafactory"
+		},
+		"linkedservice_adls_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'linkedservice_adls'"
+		},
+		"ls_AzureDatabricks_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_AzureDatabricks'"
+		},
+		"linkedservice_adls_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://vsmadls.dfs.core.windows.net/"
+		},
+		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0315-101323-4gdnvq1u"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/linkedservice_adls')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('linkedservice_adls_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('linkedservice_adls_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_AzureDatabricks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405611606171178.18.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('ls_AzureDatabricks_accessToken')]"
+					},
+					"existingClusterId": "[parameters('ls_AzureDatabricks_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_FileMetaData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_file": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().p_file",
+							"type": "Expression"
+						},
+						"fileSystem": "staging"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_getStageMetaData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "staging"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Server_ID",
+						"type": "String"
+					},
+					{
+						"name": "Hostname",
+						"type": "String"
+					},
+					{
+						"name": "IP_Address",
+						"type": "String"
+					},
+					{
+						"name": "OS_Type",
+						"type": "String"
+					},
+					{
+						"name": "Server_Location",
+						"type": "String"
+					},
+					{
+						"name": "CPU_Utilization (%)",
+						"type": "String"
+					},
+					{
+						"name": "Memory_Usage (%)",
+						"type": "String"
+					},
+					{
+						"name": "Disk_IO (%)",
+						"type": "String"
+					},
+					{
+						"name": "Network_Traffic_In (MB/s)",
+						"type": "String"
+					},
+					{
+						"name": "Network_Traffic_Out (MB/s)",
+						"type": "String"
+					},
+					{
+						"name": "Uptime (Hours)",
+						"type": "String"
+					},
+					{
+						"name": "Downtime (Hours)",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Name",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Email",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Phone",
+						"type": "String"
+					},
+					{
+						"name": "Log_Timestamp",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_hostparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_distribution_by_host",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_loadparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_distribution_by_load",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_locationparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_distribution_by_location",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_osparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_distribution_by_os",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_processedsinkparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_metrics_processed",
+						"fileSystem": "processed"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_rawarchivesink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "archive_logs",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_rawservertoarchive')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().p_filename",
+							"type": "Expression"
+						},
+						"folderPath": "server_logs",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_rawsink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_logs",
+						"fileSystem": "raw"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_stagingarchivesink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_archiveFileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().p_archiveFileName",
+							"type": "Expression"
+						},
+						"folderPath": "archive",
+						"fileSystem": "staging"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_stagingsource')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_FileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().p_FileName",
+							"type": "Expression"
+						},
+						"fileSystem": "staging"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Server_ID",
+						"type": "String"
+					},
+					{
+						"name": "Hostname",
+						"type": "String"
+					},
+					{
+						"name": "IP_Address",
+						"type": "String"
+					},
+					{
+						"name": "OS_Type",
+						"type": "String"
+					},
+					{
+						"name": "Server_Location",
+						"type": "String"
+					},
+					{
+						"name": "CPU_Utilization (%)",
+						"type": "String"
+					},
+					{
+						"name": "Memory_Usage (%)",
+						"type": "String"
+					},
+					{
+						"name": "Disk_IO (%)",
+						"type": "String"
+					},
+					{
+						"name": "Network_Traffic_In (MB/s)",
+						"type": "String"
+					},
+					{
+						"name": "Network_Traffic_Out (MB/s)",
+						"type": "String"
+					},
+					{
+						"name": "Uptime (Hours)",
+						"type": "String"
+					},
+					{
+						"name": "Downtime (Hours)",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Name",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Email",
+						"type": "String"
+					},
+					{
+						"name": "Admin_Phone",
+						"type": "String"
+					},
+					{
+						"name": "Log_Timestamp",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_timeparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "linkedservice_adls",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "server_distribution_by_time",
+						"fileSystem": "curated"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/linkedservice_adls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Curation_Data')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_processedsinkparquet",
+								"type": "DatasetReference"
+							},
+							"name": "TransformedSource"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_loadparquet",
+								"type": "DatasetReference"
+							},
+							"name": "LoadSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_osparquet",
+								"type": "DatasetReference"
+							},
+							"name": "OSSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_timeparquet",
+								"type": "DatasetReference"
+							},
+							"name": "TimeSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_hostparquet",
+								"type": "DatasetReference"
+							},
+							"name": "HostSink"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_locationparquet",
+								"type": "DatasetReference"
+							},
+							"name": "LocationSink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AggregationByHost"
+						},
+						{
+							"name": "AggregationByLocation"
+						},
+						{
+							"name": "AggregationByOS"
+						},
+						{
+							"name": "AggregationByLoad"
+						},
+						{
+							"name": "HashTruncate"
+						},
+						{
+							"name": "AggregateByLogTimeStamp"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Server_ID as string,",
+						"          Hostname_Hash as string,",
+						"          IP_Address_Hash as string,",
+						"          OS_Type as string,",
+						"          Server_Location as string,",
+						"          CPU_Utilization as double,",
+						"          Memory_Usage as double,",
+						"          Disk_IO as double,",
+						"          Network_Traffic_In as double,",
+						"          Network_Traffic_Out as double,",
+						"          Total_Network_Traffic as double,",
+						"          Uptime_Hours as double,",
+						"          Downtime_Hours as double,",
+						"          Uptime_Utilization as double,",
+						"          Admin_Name as string,",
+						"          Admin_Email_Hash as string,",
+						"          Admin_Phone_Hash as string,",
+						"          Log_Timestamp as timestamp,",
+						"          Server_Load as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> TransformedSource",
+						"HashTruncate aggregate(groupBy(Host_ID,",
+						"          Hostname_Hash),",
+						"     Server_Count = count(Server_ID),",
+						"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+						"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+						"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+						"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+						"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByHost",
+						"TransformedSource aggregate(groupBy(Server_Location),",
+						"     Server_Count = count(Server_ID),",
+						"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+						"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+						"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+						"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+						"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByLocation",
+						"TransformedSource aggregate(groupBy(OS_Type),",
+						"     Server_Count = count(Server_ID),",
+						"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+						"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+						"          Avg_Disk_IO = round(avg(Disk_IO),2),",
+						"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2),",
+						"          Avg_Uptime_Utilization = round(avg(Uptime_Utilization),2)) ~> AggregationByOS",
+						"TransformedSource aggregate(groupBy(Server_Load),",
+						"     Server_Count = count(Server_ID),",
+						"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2)) ~> AggregationByLoad",
+						"TransformedSource derive(Host_ID = substring(Hostname_Hash, 1, 8)) ~> HashTruncate",
+						"TransformedSource aggregate(groupBy(Log_Timestamp),",
+						"     Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
+						"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
+						"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2)) ~> AggregateByLogTimeStamp",
+						"AggregationByLoad sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> LoadSink",
+						"AggregationByOS sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> OSSink",
+						"AggregateByLogTimeStamp sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> TimeSink",
+						"AggregationByHost sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> HostSink",
+						"AggregationByLocation sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> LocationSink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_processedsinkparquet')]",
+				"[concat(variables('factoryId'), '/datasets/ds_loadparquet')]",
+				"[concat(variables('factoryId'), '/datasets/ds_osparquet')]",
+				"[concat(variables('factoryId'), '/datasets/ds_timeparquet')]",
+				"[concat(variables('factoryId'), '/datasets/ds_hostparquet')]",
+				"[concat(variables('factoryId'), '/datasets/ds_locationparquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Transform_Data')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_rawsink",
+								"type": "DatasetReference"
+							},
+							"name": "VirtualServerLogs"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_processedsinkparquet",
+								"type": "DatasetReference"
+							},
+							"name": "TransformedVirtualServerLogs"
+						}
+					],
+					"transformations": [
+						{
+							"name": "timeStampConversion"
+						},
+						{
+							"name": "filterIncorrectValues"
+						},
+						{
+							"name": "RemovePIIData"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Server_ID as string,",
+						"          Hostname as string,",
+						"          IP_Address as string,",
+						"          OS_Type as string,",
+						"          Server_Location as string,",
+						"          {CPU_Utilization (%)} as double,",
+						"          {Memory_Usage (%)} as double,",
+						"          {Disk_IO (%)} as double,",
+						"          {Network_Traffic_In (MB/s)} as double,",
+						"          {Network_Traffic_Out (MB/s)} as double,",
+						"          {Uptime (Hours)} as double,",
+						"          {Downtime (Hours)} as double,",
+						"          Admin_Name as string,",
+						"          Admin_Email as string,",
+						"          Admin_Phone as string,",
+						"          Log_Timestamp as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> VirtualServerLogs",
+						"filterIncorrectValues derive({Total_Network_Traffic (MB/s)} = round({Network_Traffic_Out (MB/s)} + {Network_Traffic_In (MB/s)}, 2),",
+						"          {Uptime_Utilization (%)} = round({Uptime (Hours)}/({Uptime (Hours)}+{Downtime (Hours)}) * 100, 2),",
+						"          Server_Load = iif({CPU_Utilization (%)} > 75, 'High', iif({CPU_Utilization (%)} > 50, 'Moderate', 'Low')),",
+						"          Log_Timestamp = toTimestamp(Log_Timestamp, 'dd-MM-yyyy'),",
+						"          IP_Address_Hash = sha2(256, toString(IP_Address)),",
+						"          Hostname_Hash = sha2(256, toString(Hostname)),",
+						"          Admin_Email_Hash = sha2(256, toString(Admin_Email)),",
+						"          Admin_Phone_Hash = sha2(256, toString(Admin_Phone))) ~> timeStampConversion",
+						"VirtualServerLogs filter({CPU_Utilization (%)} >= 0 && {CPU_Utilization (%)} <= 100 &&\r",
+						"{Memory_Usage (%)} >= 0 && {Memory_Usage (%)} <= 100 &&\r",
+						"{Disk_IO (%)} >= 0 && \r",
+						"{Network_Traffic_In (MB/s)} >= 0 && {Network_Traffic_Out (MB/s)} >= 0) ~> filterIncorrectValues",
+						"timeStampConversion select(mapColumn(",
+						"          Server_ID,",
+						"          Hostname_Hash,",
+						"          IP_Address_Hash,",
+						"          OS_Type,",
+						"          Server_Location,",
+						"          CPU_Utilization = {CPU_Utilization (%)},",
+						"          Memory_Usage = {Memory_Usage (%)},",
+						"          Disk_IO = {Disk_IO (%)},",
+						"          Network_Traffic_In = {Network_Traffic_In (MB/s)},",
+						"          Network_Traffic_Out = {Network_Traffic_Out (MB/s)},",
+						"          Total_Network_Traffic = {Total_Network_Traffic (MB/s)},",
+						"          Uptime_Hours = {Uptime (Hours)},",
+						"          Downtime_Hours = {Downtime (Hours)},",
+						"          Uptime_Utilization = {Uptime_Utilization (%)},",
+						"          Admin_Name,",
+						"          Admin_Email_Hash,",
+						"          Admin_Phone_Hash,",
+						"          Log_Timestamp,",
+						"          Server_Load",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> RemovePIIData",
+						"RemovePIIData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     truncate: true,",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> TransformedVirtualServerLogs"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
+				"[concat(variables('factoryId'), '/datasets/ds_processedsinkparquet')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/curation_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DataCuration",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Curation_Data",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"TransformedSource": {},
+									"LoadSink": {},
+									"OSSink": {},
+									"TimeSink": {},
+									"HostSink": {},
+									"LocationSink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-03-13T17:26:24Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Curation_Data')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/transformation_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Transform_data",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "Transform_Data",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"VirtualServerLogs": {},
+									"TransformedVirtualServerLogs": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "ForEachFile",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GetFileNames1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GetFileNames1').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyFromRawLogsToArchive",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_rawservertoarchive",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": "@item().name"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_rawarchivesink",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "DeleteFileFromRawLogs",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "CopyFromRawLogsToArchive",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_rawservertoarchive",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "GetFileNames1",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "Transform_data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_rawsink",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ExecuteCurationPipeline",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ForEachFile",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "curation_pipeline",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-03-14T01:47:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/Transform_Data')]",
+				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
+				"[concat(variables('factoryId'), '/pipelines/curation_pipeline')]",
+				"[concat(variables('factoryId'), '/datasets/ds_rawservertoarchive')]",
+				"[concat(variables('factoryId'), '/datasets/ds_rawarchivesink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/transformation_pipeline_copy1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEachFile",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GetFileNames1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GetFileNames1').output.childItems",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "CopyFromRawLogsToArchive",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_rawservertoarchive",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": "@item().name"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_rawarchivesink",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "DeleteFileFromRawLogs",
+									"type": "Delete",
+									"dependsOn": [
+										{
+											"activity": "CopyFromRawLogsToArchive",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataset": {
+											"referenceName": "ds_rawservertoarchive",
+											"type": "DatasetReference",
+											"parameters": {
+												"p_filename": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										},
+										"enableLogging": false,
+										"storeSettings": {
+											"type": "AzureBlobFSReadSettings",
+											"recursive": true,
+											"enablePartitionDiscovery": false
+										}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "GetFileNames1",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "Transform_data",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_rawsink",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "ExecuteCurationPipeline",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ForEachFile",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "curation_pipeline",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Transform_data",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/azure1@fredin.dev/Transformation_Notebook"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_AzureDatabricks",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-03-14T01:47:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
+				"[concat(variables('factoryId'), '/pipelines/curation_pipeline')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_AzureDatabricks')]",
+				"[concat(variables('factoryId'), '/datasets/ds_rawservertoarchive')]",
+				"[concat(variables('factoryId'), '/datasets/ds_rawarchivesink')]"
+			]
+		}
+	]
+}

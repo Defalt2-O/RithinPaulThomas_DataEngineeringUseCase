@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "vsmazuredatafactory"
+		},
+		"linkedservice_adls_accountKey": {
+			"value": ""
+		},
+		"ls_AzureDatabricks_accessToken": {
+			"value": ""
+		},
+		"linkedservice_adls_properties_typeProperties_url": {
+			"value": "https://vsmadls.dfs.core.windows.net/"
+		},
+		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"value": "0315-101323-4gdnvq1u"
+		}
+	}
+}
