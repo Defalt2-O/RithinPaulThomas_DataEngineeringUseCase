@@ -346,7 +346,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"pipeline": {
-						"referenceName": "transformation_pipeline_copy1",
+						"referenceName": "transformation_pipeline",
 						"type": "PipelineReference"
 					},
 					"waitOnCompletion": true
