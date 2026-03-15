@@ -66,9 +66,6 @@
 					"name": "HashTruncate"
 				},
 				{
-					"name": "TimeFormat"
-				},
-				{
 					"name": "AggregateByLogTimeStamp"
 				}
 			],
@@ -124,8 +121,7 @@
 				"     Server_Count = count(Server_ID),",
 				"          Avg_CPU_Utilization = round(avg(CPU_Utilization),2)) ~> AggregationByLoad",
 				"TransformedSource derive(Host_ID = substring(Hostname_Hash, 1, 8)) ~> HashTruncate",
-				"TransformedSource derive(Log_Timestamp = toDate(Log_Timestamp)) ~> TimeFormat",
-				"TimeFormat aggregate(groupBy(Log_Timestamp),",
+				"TransformedSource aggregate(groupBy(Log_Timestamp),",
 				"     Avg_CPU_Utilization = round(avg(CPU_Utilization),2),",
 				"          Avg_Memory_Usage = round(avg(Memory_Usage),2),",
 				"          Avg_Total_Network_Traffic = round(avg(Total_Network_Traffic),2)) ~> AggregateByLogTimeStamp",
