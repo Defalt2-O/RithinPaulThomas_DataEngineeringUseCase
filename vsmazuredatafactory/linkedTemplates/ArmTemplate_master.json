@@ -15,11 +15,19 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'ls_AzureDatabricks'"
 		},
+		"ls_db_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_db'"
+		},
 		"linkedservice_adls_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://vsmadls.dfs.core.windows.net/"
 		},
 		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0315-101323-4gdnvq1u"
+		},
+		"ls_db_properties_typeProperties_existingClusterId": {
 			"type": "string",
 			"defaultValue": "0315-101323-4gdnvq1u"
 		},
@@ -56,11 +64,17 @@
 					"ls_AzureDatabricks_accessToken": {
 						"value": "[parameters('ls_AzureDatabricks_accessToken')]"
 					},
+					"ls_db_accessToken": {
+						"value": "[parameters('ls_db_accessToken')]"
+					},
 					"linkedservice_adls_properties_typeProperties_url": {
 						"value": "[parameters('linkedservice_adls_properties_typeProperties_url')]"
 					},
 					"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
 						"value": "[parameters('ls_AzureDatabricks_properties_typeProperties_existingClusterId')]"
+					},
+					"ls_db_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('ls_db_properties_typeProperties_existingClusterId')]"
 					}
 				}
 			},

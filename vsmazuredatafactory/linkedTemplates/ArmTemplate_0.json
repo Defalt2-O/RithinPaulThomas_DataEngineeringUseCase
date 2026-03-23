@@ -15,11 +15,19 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'ls_AzureDatabricks'"
 		},
+		"ls_db_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_db'"
+		},
 		"linkedservice_adls_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://vsmadls.dfs.core.windows.net/"
 		},
 		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0315-101323-4gdnvq1u"
+		},
+		"ls_db_properties_typeProperties_existingClusterId": {
 			"type": "string",
 			"defaultValue": "0315-101323-4gdnvq1u"
 		}
@@ -59,6 +67,24 @@
 						"value": "[parameters('ls_AzureDatabricks_accessToken')]"
 					},
 					"existingClusterId": "[parameters('ls_AzureDatabricks_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_db')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405611606171178.18.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('ls_db_accessToken')]"
+					},
+					"existingClusterId": "[parameters('ls_db_properties_typeProperties_existingClusterId')]"
 				}
 			},
 			"dependsOn": []
@@ -1052,7 +1078,7 @@
 						"type": "GetMetadata",
 						"dependsOn": [
 							{
-								"activity": "Transform_data",
+								"activity": "Transform_Data",
 								"dependencyConditions": [
 									"Succeeded"
 								]
@@ -1110,7 +1136,7 @@
 						}
 					},
 					{
-						"name": "Transform_data",
+						"name": "Transform_Data",
 						"type": "DatabricksNotebook",
 						"dependsOn": [],
 						"policy": {
@@ -1125,7 +1151,7 @@
 							"notebookPath": "/Users/azure1@fredin.dev/Transformation_Notebook"
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_AzureDatabricks",
+							"referenceName": "ls_db",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -1139,385 +1165,9 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
 				"[concat(variables('factoryId'), '/pipelines/curation_pipeline')]",
-				"[concat(variables('factoryId'), '/linkedServices/ls_AzureDatabricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_db')]",
 				"[concat(variables('factoryId'), '/datasets/ds_rawservertoarchive')]",
 				"[concat(variables('factoryId'), '/datasets/ds_rawarchivesink')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ingestion_pipeline')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "CheckForFiles",
-						"type": "Validation",
-						"dependsOn": [],
-						"userProperties": [],
-						"typeProperties": {
-							"dataset": {
-								"referenceName": "ds_getStageMetaData",
-								"type": "DatasetReference",
-								"parameters": {}
-							},
-							"timeout": "0.00:01:00",
-							"sleep": 10,
-							"childItems": true
-						}
-					},
-					{
-						"name": "ForEachFile",
-						"type": "ForEach",
-						"dependsOn": [
-							{
-								"activity": "GetFileNames",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"items": {
-								"value": "@activity('GetFileNames').output.childItems",
-								"type": "Expression"
-							},
-							"isSequential": true,
-							"activities": [
-								{
-									"name": "IfFileNotEmptyOrFolder",
-									"type": "IfCondition",
-									"dependsOn": [
-										{
-											"activity": "GetFileData",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"userProperties": [],
-									"typeProperties": {
-										"expression": {
-											"value": "@and(and(greater(activity('GetFileData').output.size,0),endswith(item().name, '.csv')),equals(item().type,'File'))",
-											"type": "Expression"
-										},
-										"ifTrueActivities": [
-											{
-												"name": "CopyFromStageToRaw",
-												"type": "Copy",
-												"dependsOn": [],
-												"policy": {
-													"timeout": "0.12:00:00",
-													"retry": 0,
-													"retryIntervalInSeconds": 30,
-													"secureOutput": false,
-													"secureInput": false
-												},
-												"userProperties": [],
-												"typeProperties": {
-													"source": {
-														"type": "DelimitedTextSource",
-														"storeSettings": {
-															"type": "AzureBlobFSReadSettings",
-															"recursive": true,
-															"enablePartitionDiscovery": false
-														},
-														"formatSettings": {
-															"type": "DelimitedTextReadSettings"
-														}
-													},
-													"sink": {
-														"type": "DelimitedTextSink",
-														"storeSettings": {
-															"type": "AzureBlobFSWriteSettings"
-														},
-														"formatSettings": {
-															"type": "DelimitedTextWriteSettings",
-															"quoteAllText": true,
-															"fileExtension": ".txt"
-														}
-													},
-													"enableStaging": false,
-													"translator": {
-														"type": "TabularTranslator",
-														"typeConversion": true,
-														"typeConversionSettings": {
-															"allowDataTruncation": true,
-															"treatBooleanAsNumber": false
-														}
-													}
-												},
-												"inputs": [
-													{
-														"referenceName": "ds_stagingsource",
-														"type": "DatasetReference",
-														"parameters": {
-															"p_FileName": {
-																"value": "@item().name",
-																"type": "Expression"
-															}
-														}
-													}
-												],
-												"outputs": [
-													{
-														"referenceName": "ds_rawsink",
-														"type": "DatasetReference",
-														"parameters": {}
-													}
-												]
-											},
-											{
-												"name": "CopyFromStageToStageArchive",
-												"type": "Copy",
-												"dependsOn": [
-													{
-														"activity": "CopyFromStageToRaw",
-														"dependencyConditions": [
-															"Succeeded"
-														]
-													}
-												],
-												"policy": {
-													"timeout": "0.12:00:00",
-													"retry": 0,
-													"retryIntervalInSeconds": 30,
-													"secureOutput": false,
-													"secureInput": false
-												},
-												"userProperties": [],
-												"typeProperties": {
-													"source": {
-														"type": "DelimitedTextSource",
-														"storeSettings": {
-															"type": "AzureBlobFSReadSettings",
-															"recursive": true,
-															"enablePartitionDiscovery": false
-														},
-														"formatSettings": {
-															"type": "DelimitedTextReadSettings"
-														}
-													},
-													"sink": {
-														"type": "DelimitedTextSink",
-														"storeSettings": {
-															"type": "AzureBlobFSWriteSettings"
-														},
-														"formatSettings": {
-															"type": "DelimitedTextWriteSettings",
-															"quoteAllText": true,
-															"fileExtension": ".txt"
-														}
-													},
-													"enableStaging": false,
-													"translator": {
-														"type": "TabularTranslator",
-														"typeConversion": true,
-														"typeConversionSettings": {
-															"allowDataTruncation": true,
-															"treatBooleanAsNumber": false
-														}
-													}
-												},
-												"inputs": [
-													{
-														"referenceName": "ds_stagingsource",
-														"type": "DatasetReference",
-														"parameters": {
-															"p_FileName": {
-																"value": "@item().name",
-																"type": "Expression"
-															}
-														}
-													}
-												],
-												"outputs": [
-													{
-														"referenceName": "ds_stagingarchivesink",
-														"type": "DatasetReference",
-														"parameters": {
-															"p_archiveFileName": {
-																"value": "@item().name",
-																"type": "Expression"
-															}
-														}
-													}
-												]
-											},
-											{
-												"name": "DeleteFileFromStaging",
-												"type": "Delete",
-												"dependsOn": [
-													{
-														"activity": "CopyFromStageToStageArchive",
-														"dependencyConditions": [
-															"Succeeded"
-														]
-													}
-												],
-												"policy": {
-													"timeout": "0.12:00:00",
-													"retry": 0,
-													"retryIntervalInSeconds": 30,
-													"secureOutput": false,
-													"secureInput": false
-												},
-												"userProperties": [],
-												"typeProperties": {
-													"dataset": {
-														"referenceName": "ds_stagingsource",
-														"type": "DatasetReference",
-														"parameters": {
-															"p_FileName": {
-																"value": "@item().name",
-																"type": "Expression"
-															}
-														}
-													},
-													"enableLogging": false,
-													"storeSettings": {
-														"type": "AzureBlobFSReadSettings",
-														"recursive": true,
-														"enablePartitionDiscovery": false
-													}
-												}
-											}
-										]
-									}
-								},
-								{
-									"name": "GetFileData",
-									"type": "GetMetadata",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"dataset": {
-											"referenceName": "ds_FileMetaData",
-											"type": "DatasetReference",
-											"parameters": {
-												"p_file": {
-													"value": "@item().name",
-													"type": "Expression"
-												}
-											}
-										},
-										"fieldList": [
-											"size"
-										],
-										"storeSettings": {
-											"type": "AzureBlobFSReadSettings",
-											"recursive": true,
-											"enablePartitionDiscovery": false
-										},
-										"formatSettings": {
-											"type": "DelimitedTextReadSettings"
-										}
-									}
-								}
-							]
-						}
-					},
-					{
-						"name": "GetFileNames",
-						"type": "GetMetadata",
-						"dependsOn": [
-							{
-								"activity": "CheckForFiles",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataset": {
-								"referenceName": "ds_getStageMetaData",
-								"type": "DatasetReference",
-								"parameters": {}
-							},
-							"fieldList": [
-								"childItems"
-							],
-							"storeSettings": {
-								"type": "AzureBlobFSReadSettings",
-								"recursive": true,
-								"enablePartitionDiscovery": false
-							},
-							"formatSettings": {
-								"type": "DelimitedTextReadSettings"
-							}
-						}
-					},
-					{
-						"name": "EmptyFolder",
-						"type": "Fail",
-						"dependsOn": [
-							{
-								"activity": "CheckForFiles",
-								"dependencyConditions": [
-									"Failed"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"message": "Files do not exist in the specified folder. Therefore, pipeline ingestion cannot proceed.",
-							"errorCode": "File_Not_Found"
-						}
-					},
-					{
-						"name": "ExecuteTransformationPipeline",
-						"type": "ExecutePipeline",
-						"dependsOn": [
-							{
-								"activity": "ForEachFile",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"pipeline": {
-								"referenceName": "transformation_pipeline",
-								"type": "PipelineReference"
-							},
-							"waitOnCompletion": true,
-							"parameters": {}
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"annotations": [],
-				"lastPublishTime": "2026-03-13T13:36:24Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/ds_getStageMetaData')]",
-				"[concat(variables('factoryId'), '/pipelines/transformation_pipeline')]",
-				"[concat(variables('factoryId'), '/datasets/ds_FileMetaData')]",
-				"[concat(variables('factoryId'), '/datasets/ds_stagingsource')]",
-				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
-				"[concat(variables('factoryId'), '/datasets/ds_stagingarchivesink')]"
 			]
 		}
 	]

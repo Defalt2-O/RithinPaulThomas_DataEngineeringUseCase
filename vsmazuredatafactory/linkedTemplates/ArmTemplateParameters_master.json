@@ -11,10 +11,16 @@
 		"ls_AzureDatabricks_accessToken": {
 			"value": ""
 		},
+		"ls_db_accessToken": {
+			"value": ""
+		},
 		"linkedservice_adls_properties_typeProperties_url": {
 			"value": "https://vsmadls.dfs.core.windows.net/"
 		},
 		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"value": "0315-101323-4gdnvq1u"
+		},
+		"ls_db_properties_typeProperties_existingClusterId": {
 			"value": "0315-101323-4gdnvq1u"
 		},
 		"containerUri": {

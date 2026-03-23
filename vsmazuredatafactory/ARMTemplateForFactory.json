@@ -15,11 +15,19 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'ls_AzureDatabricks'"
 		},
+		"ls_db_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_db'"
+		},
 		"linkedservice_adls_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://vsmadls.dfs.core.windows.net/"
 		},
 		"ls_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0315-101323-4gdnvq1u"
+		},
+		"ls_db_properties_typeProperties_existingClusterId": {
 			"type": "string",
 			"defaultValue": "0315-101323-4gdnvq1u"
 		}
@@ -588,7 +596,7 @@
 						"type": "GetMetadata",
 						"dependsOn": [
 							{
-								"activity": "Transform_data",
+								"activity": "Transform_Data",
 								"dependencyConditions": [
 									"Succeeded"
 								]
@@ -646,7 +654,7 @@
 						}
 					},
 					{
-						"name": "Transform_data",
+						"name": "Transform_Data",
 						"type": "DatabricksNotebook",
 						"dependsOn": [],
 						"policy": {
@@ -661,7 +669,7 @@
 							"notebookPath": "/Users/azure1@fredin.dev/Transformation_Notebook"
 						},
 						"linkedServiceName": {
-							"referenceName": "ls_AzureDatabricks",
+							"referenceName": "ls_db",
 							"type": "LinkedServiceReference"
 						}
 					}
@@ -675,7 +683,7 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
 				"[concat(variables('factoryId'), '/pipelines/curation_pipeline')]",
-				"[concat(variables('factoryId'), '/linkedServices/ls_AzureDatabricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_db')]",
 				"[concat(variables('factoryId'), '/datasets/ds_rawservertoarchive')]",
 				"[concat(variables('factoryId'), '/datasets/ds_rawarchivesink')]"
 			]
@@ -1550,6 +1558,24 @@
 				"[concat(variables('factoryId'), '/datasets/ds_rawsink')]",
 				"[concat(variables('factoryId'), '/datasets/ds_processedsinkparquet')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_db')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405611606171178.18.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('ls_db_accessToken')]"
+					},
+					"existingClusterId": "[parameters('ls_db_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
 		}
 	]
 }
