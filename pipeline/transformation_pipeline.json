@@ -128,7 +128,7 @@
 				"type": "GetMetadata",
 				"dependsOn": [
 					{
-						"activity": "Transform_data",
+						"activity": "Transform_Data",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -184,7 +184,7 @@
 				}
 			},
 			{
-				"name": "Transform_data",
+				"name": "Transform_Data",
 				"type": "DatabricksNotebook",
 				"dependsOn": [],
 				"policy": {
@@ -199,7 +199,7 @@
 					"notebookPath": "/Users/azure1@fredin.dev/Transformation_Notebook"
 				},
 				"linkedServiceName": {
-					"referenceName": "ls_AzureDatabricks",
+					"referenceName": "ls_db",
 					"type": "LinkedServiceReference"
 				}
 			}
